@@ -94,84 +94,62 @@
 // }
 
 
-import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { MessageSquare, Wind, ChevronRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { DashboardHeader } from '../components/DashboardHeader';
-import { useEffect, useState } from 'react';
-
-// 🔥 Tambahkan interface untuk AQI
-interface AqiResponse {
-  location: string;
-  aqi: number;
-  interpretation: string;
-  pm25: number;
-  pm10: number;
-  co: number;
-  no2: number;
-  o3: number;
-  so2: number;
-}
+import { Link } from "react-router-dom";
+import { motion } from "motion/react";
+import { MessageSquare, ChevronRight } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { DashboardHeader } from "../components/DashboardHeader";
+import { useEffect, useState } from "react";
+import { getAqi, type AqiResponse } from "../api/aqi";
 
 export function Dashboard() {
   const { user } = useAuth();
 
-  // 🔥 State untuk AQI
   const [aqiData, setAqiData] = useState<AqiResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-// Helper untuk kapital huruf pertama
-const capitalize = (str: string) =>
-  str.charAt(0).toUpperCase() + str.slice(1);
+  const capitalize = (str: string) =>
+    str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
-// Interpretasi singkat (ambil sebelum tanda "—")
-const shortInterpretation = aqiData?.interpretation
-  ? aqiData.interpretation.split("—")[0].trim()
-  : "";
+  const shortInterpretation = aqiData?.interpretation
+    ? aqiData.interpretation.split("—")[0].trim()
+    : "";
 
-  // 🔥 Ambil data AQI dari FastAPI
+  // ✅ Ambil AQI saat halaman dibuka
   useEffect(() => {
-  async function fetchAqi() {
-    try {
-      const res = await fetch('API_BASE_URL');
-      const data = await res.json();
+    let cancelled = false;
 
-      console.log("=== DATA DARI API ===", data);   // ⬅⬅⬅ Tambahkan ini
-
-      setAqiData(data);
-    } catch (err) {
-      console.error("Gagal mengambil AQI:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  fetchAqi();
-}, []);
-
-  useEffect(() => {
     async function fetchAqi() {
       try {
-        const res = await fetch('');
-        const data = await res.json();
-        setAqiData(data);
+        // TODO: ganti "surabaya" jadi dynamic (input user / lokasi) kalau sudah siap
+        const data = await getAqi("surabaya");
+        if (!cancelled) setAqiData(data);
       } catch (err) {
-        console.error("Gagal mengambil data AQI:", err);
+        console.error("Gagal mengambil AQI:", err);
+        if (!cancelled) setAqiData(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchAqi();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const interpretationLabel = loading
+    ? "Mengambil data..."
+    : shortInterpretation
+      ? capitalize(shortInterpretation)
+      : "Tidak diketahui";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <DashboardHeader />
 
       <main className="container mx-auto px-4 pt-24 pb-12 max-w-6xl">
-
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -201,30 +179,22 @@ const shortInterpretation = aqiData?.interpretation
                   Kualitas Udara Saat Ini
                 </p>
 
-                {/* 🔥 Mengambil lokasi dari API */}
                 <h2 className="text-white">
-                  {/* {aqiData ? aqiData.location.toUpperCase() : "Surabaya"} */}{aqiData ? capitalize(aqiData.location) : "Surabaya"}
-
+                  {aqiData ? capitalize(aqiData.location) : "Surabaya"}
                 </h2>
               </div>
 
               <div className="text-right">
-
-                {/* 🔥 Menampilkan AQI real atau loading */}
                 <div className="text-4xl tabular-nums">
                   {loading ? "..." : aqiData?.aqi ?? "--"}
                 </div>
-
                 <div className="text-sm text-blue-100">AQI</div>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              
-              {/* 🔥 Menampilkan interpretasi real */}
               <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm">
-                {/* {loading ? "Mengambil data..." : aqiData?.interpretation ?? "Tidak diketahui"} */}{loading ? "Mengambil data..." : capitalize(shortInterpretation) ?? "Tidak diketahui"}
-
+                {interpretationLabel}
               </span>
 
               <Link to="/chat" className="flex items-center gap-2 text-sm hover:underline">

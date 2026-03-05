@@ -46,5 +46,13 @@ export async function getAqi(location: string): Promise<AqiResponse> {
     throw new Error(`Gagal mengambil data AQI (${res.status}): ${text}`);
   }
 
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Expected JSON but got ${contentType}. Body: ${text.slice(0, 200)}`
+    );
+  }
+
   return res.json();
 }

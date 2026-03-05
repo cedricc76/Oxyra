@@ -12,6 +12,16 @@ export async function sendMessageToOxyra(
   message: string,
   history: any[] = []
 ): Promise<OxyraResponse> {
+  if (!API_BASE_URL) {
+    return {
+      reply: "Konfigurasi error: VITE_API_BASE_URL belum diset.",
+      history,
+      intent: "error",
+      latency: 0,
+      locations_used: [],
+    };
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: "POST",
@@ -19,12 +29,24 @@ export async function sendMessageToOxyra(
       body: JSON.stringify({ message, history }),
     });
 
+    const contentType = response.headers.get("content-type") || "";
+
     if (!response.ok) {
-      throw new Error("Server OXYRA error");
+      const text = await response.text().catch(() => "");
+      throw new Error(`Server OXYRA error (${response.status}): ${text}`);
+    }
+
+    // Kalau server balas HTML (misalnya error page), kasih error jelas
+    if (!contentType.includes("application/json")) {
+      const text = await response.text().catch(() => "");
+      throw new Error(
+        `Expected JSON but got ${contentType}. Body: ${text.slice(0, 200)}`
+      );
     }
 
     return await response.json();
   } catch (error) {
+    console.error("sendMessageToOxyra error:", error);
     return {
       reply: "Maaf, server OXYRA tidak merespons.",
       history,
