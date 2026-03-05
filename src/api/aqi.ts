@@ -1,22 +1,50 @@
-// src/api/aqi.ts
+// // src/api/aqi.ts
+// export interface AqiResponse {
+//     location: string;
+//     aqi: number;
+//     interpretation: string;
+//     pm25: number;
+//     pm10: number;
+//     co: number;
+//     no2: number;
+//     o3: number;
+//     so2: number;
+// }
+
+// export async function getAqi(location: string): Promise<AqiResponse> {
+//     const res = await fetch(`http://127.0.0.1:8000/aqi/${location}`);
+
+//     if (!res.ok) {
+//     throw new Error("Gagal mengambil data AQI");
+//     }
+
+//     return res.json();
+// }
+
+import { API_BASE_URL } from "./base";
+
 export interface AqiResponse {
-    location: string;
-    aqi: number;
-    interpretation: string;
-    pm25: number;
-    pm10: number;
-    co: number;
-    no2: number;
-    o3: number;
-    so2: number;
+  location: string;
+  aqi: number;
+  interpretation: string;
+  pm25: number;
+  pm10: number;
+  co: number;
+  no2: number;
+  o3: number;
+  so2: number;
 }
 
 export async function getAqi(location: string): Promise<AqiResponse> {
-    const res = await fetch(`http://127.0.0.1:8000/aqi/${location}`);
+  if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL belum diset");
 
-    if (!res.ok) {
-    throw new Error("Gagal mengambil data AQI");
-    }
+  const url = `${API_BASE_URL}/aqi/${encodeURIComponent(location)}`;
+  const res = await fetch(url);
 
-    return res.json();
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Gagal mengambil data AQI (${res.status}): ${text}`);
+  }
+
+  return res.json();
 }

@@ -134,7 +134,7 @@ const shortInterpretation = aqiData?.interpretation
   useEffect(() => {
   async function fetchAqi() {
     try {
-      const res = await fetch('http://127.0.0.1:8000/aqi/surabaya');
+      const res = await fetch('API_BASE_URL');
       const data = await res.json();
 
       console.log("=== DATA DARI API ===", data);   // ⬅⬅⬅ Tambahkan ini
@@ -153,7 +153,7 @@ const shortInterpretation = aqiData?.interpretation
   useEffect(() => {
     async function fetchAqi() {
       try {
-        const res = await fetch('http://127.0.0.1:8000/aqi/surabaya');
+        const res = await fetch('');
         const data = await res.json();
         setAqiData(data);
       } catch (err) {

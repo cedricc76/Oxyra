@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "./base";
+
 export interface OxyraResponse {
   reply: string;
   history: any[];
@@ -11,7 +13,7 @@ export async function sendMessageToOxyra(
   history: any[] = []
 ): Promise<OxyraResponse> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/chat", {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, history }),
