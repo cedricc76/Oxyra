@@ -9,12 +9,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const API_BASE_URL = process.env.VITE_API_BASE_URL;
   if (!API_BASE_URL) {
-    return res.status(500).json({ error: 'VITE_API_BASE_URL belum diset di environment' });
+    return res.status(500).json({ error: 'VITE_API_BASE_URL belum diset' });
   }
 
   try {
-    const upstream = await fetch(`${API_BASE_URL}/aqi/${encodeURIComponent(location)}`);
-    
+    const upstream = await fetch(
+      `${API_BASE_URL}/aqi/${encodeURIComponent(location)}`
+    );
+
     if (!upstream.ok) {
       const text = await upstream.text().catch(() => '');
       return res.status(upstream.status).json({ error: text });
