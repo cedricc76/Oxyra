@@ -266,7 +266,7 @@
 //   );
 // }
 
-
+//src/api/chat.tsx
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Send, Wind } from 'lucide-react';
@@ -348,7 +348,7 @@ export function Chat() {
     setMessages(prev => [...prev, aiMessage]);
 
     // Update history internal OXYRA
-    setHistory(response.history);
+    setHistory(response.history ?? []);
   };
 
   return (
