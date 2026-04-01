@@ -266,7 +266,7 @@
 //   );
 // }
 
-//src/api/chat.tsx
+//src/chat.tsx
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Send, Wind } from 'lucide-react';
