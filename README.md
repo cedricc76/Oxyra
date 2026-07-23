@@ -29,6 +29,7 @@ Oxyra/
 │   ├── tools_jatim.py        # Tools data Jatim (terbaru, per-kota, tren)
 │   ├── api_jatim.py          # API penyaji CSV (terbaru, kota, semua)
 │   ├── collector_jatim.py    # Collector IQAir, scheduler slot 2 jam WIB
+│   ├── requirements.txt
 │   └── Dockerfile
 ├── backend-usa/
 │   ├── backend_web_usa.py    # FastAPI chatbot USA (/chat)
@@ -36,14 +37,19 @@ Oxyra/
 │   ├── tools_usa.py          # Tools query MariaDB (multi-polutan, 3 tingkat)
 │   ├── rag.py                # Build & pencarian indeks RAG
 │   ├── pengetahuan_udara.py  # Sumber pengetahuan statis
-│   ├── scripts/              # Import dataset EPA (sekali pakai)
+│   ├── config.py             # Konfigurasi (Ollama URL, model default)
+│   ├── llm_client.py         # Klien Ollama
+│   ├── indeks_rag.json       # Artefak indeks RAG
+│   ├── wilayah_valid.json    # Daftar wilayah valid (state/county)
+│   ├── import_usa_*.py       # Import dataset EPA (sekali pakai)
+│   ├── daftar_wilayah.py     # Generator wilayah_valid.json (sekali pakai)
+│   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/                 # Vite + React (dashboard, grafik, chat)
-├── docs/                     # SOP & dokumentasi tambahan
+├── docs/                     # Dokumen pendukung
 ├── docker-compose.yml        # 9 service + profiles tunnel (quick/named)
 ├── nginx.conf                # Reverse proxy: / → FE, /api/iqair, /api/usa
 ├── .env.example              # Templat konfigurasi
-├── README-LOKAL.md           # Panduan menjalankan di komputer lokal
 └── README.md
 ```
 
