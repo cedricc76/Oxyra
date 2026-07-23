@@ -1,0 +1,147 @@
+# ══════════════════════════════════════════════════════════════════
+#  PELETAKAN: file ini di ROOT proyek, sejajar dengan ke-3 folder:
+#
+#  oxyra/
+#  ├── docker-compose.yml            ← file ini
+#  ├── nginx.conf
+#  ├── oxyra-chatbot-page/           ← frontend Vite
+#  │   └── Dockerfile
+#  ├── oxyra-v3-iqair/               ← backend Python 1
+#  │   └── Dockerfile
+#  └── oxyra-v3-usa/                 ← backend Python 2
+#      └── Dockerfile
+#
+#  Jika nama folder aslimu mengandung spasi ("Oxyra v3 IQAIR"),
+#  rename dulu jadi tanpa spasi — spasi di path Docker menyulitkan.
+# ══════════════════════════════════════════════════════════════════
+
+services:
+  # ── FRONTEND ── Vite build → nginx internal
+  frontend:
+    build: ./frontend
+    container_name: oxyra-frontend
+    restart: unless-stopped
+    networks: [oxyra-net]
+
+  # ── BACKEND 1: IQAIR ──
+  backend-iqair:
+    build: ./backend-jatim
+    container_name: oxyra-backend-iqair
+    restart: unless-stopped
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      # antar-backend saling panggil pakai nama service:
+      - USA_BACKEND_URL=http://backend-usa:8000
+      - DATA_API_URL=http://api-jatim:8000
+    depends_on: [ollama,api-jatim]
+    networks: [oxyra-net]
+
+# ── API DATA JATIM ── pengganti api_jatim.py di VPS (internal saja)
+  api-jatim:
+    build: ./backend-jatim
+    container_name: oxyra-api-jatim
+    restart: unless-stopped
+    command: uvicorn api_jatim:app --host 0.0.0.0 --port 8000
+    volumes:
+      - jatim_data:/app/data
+    networks: [oxyra-net]
+
+  # ── COLLECTOR ── pengganti cron VPS: tarik IQAir tiap 2 jam
+  collector-jatim:
+    build: ./backend-jatim
+    container_name: oxyra-collector
+    restart: unless-stopped
+    command: sh -c "while true; do python /app/collector_jatim.py; sleep 7200; done"
+    volumes:
+      - jatim_data:/app/data
+    environment:
+      - IQAIR_API_KEY=${IQAIR_API_KEY}
+      - TZ=Asia/Jakarta
+      - PYTHONUNBUFFERED=1
+    networks: [oxyra-net]
+
+  # ── BACKEND 2: USA ──
+  backend-usa:
+    build: ./backend-usa
+    container_name: oxyra-backend-usa
+    restart: unless-stopped
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - IQAIR_BACKEND_URL=http://backend-iqair:8000
+      - DB_HOST=mysql
+    depends_on: [ollama, mysql]
+    networks: [oxyra-net]
+  
+  mysql:
+    image: mariadb:11
+    container_name: oxyra-mysql
+    restart: unless-stopped
+    environment:
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
+      - MARIADB_DATABASE=oxyra_v3
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [oxyra-net]
+
+  # ── OLLAMA ── dipakai bersama kedua backend, TIDAK di-expose keluar
+  ollama:
+    image: ollama/ollama:latest
+    container_name: oxyra-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    networks: [oxyra-net]
+    # GPU (Vast.ai). Di VPS/laptop tanpa GPU NVIDIA: hapus blok deploy ini.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── PROXY ── pintu masuk tunggal
+  #   /            → frontend
+  #   /api/iqair/  → backend-iqair
+  #   /api/usa/    → backend-usa
+  proxy:
+    image: nginx:alpine
+    container_name: oxyra-proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [frontend, backend-iqair, backend-usa]
+    networks: [oxyra-net]
+    ports:
+      - "8080:80"
+
+  # ── TUNNEL quick (URL acak, tanpa akun):
+  #    docker compose --profile quick up -d
+  tunnel-quick:
+    image: cloudflare/cloudflared:latest
+    container_name: oxyra-tunnel
+    restart: unless-stopped
+    command: tunnel --url http://proxy:80
+    depends_on: [proxy]
+    networks: [oxyra-net]
+    profiles: [quick]
+
+  # ── TUNNEL named (domain sendiri):
+  #    TUNNEL_TOKEN=eyJ... docker compose --profile named up -d
+  tunnel-named:
+    image: cloudflare/cloudflared:latest
+    container_name: oxyra-tunnel
+    restart: unless-stopped
+    command: tunnel run --token ${TUNNEL_TOKEN}
+    depends_on: [proxy]
+    networks: [oxyra-net]
+    profiles: [named]
+
+networks:
+  oxyra-net:
+    driver: bridge
+
+volumes:
+  ollama_models:
+  jatim_data:
+  mysql_data:
