@@ -86,6 +86,8 @@ services:
   # ── OLLAMA ── dipakai bersama kedua backend, TIDAK di-expose keluar
   ollama:
     image: ollama/ollama:latest
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1
     container_name: oxyra-ollama
     restart: unless-stopped
     volumes:
@@ -121,7 +123,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: oxyra-tunnel
     restart: unless-stopped
-    command: tunnel --url http://proxy:80
+    command: tunnel --url http://proxy:80 --protocol http2
     depends_on: [proxy]
     networks: [oxyra-net]
     profiles: [quick]
@@ -132,7 +134,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: oxyra-tunnel
     restart: unless-stopped
-    command: tunnel run --token ${TUNNEL_TOKEN}
+    command: tunnel run --protocol http2 --token ${TUNNEL_TOKEN}
     depends_on: [proxy]
     networks: [oxyra-net]
     profiles: [named]
